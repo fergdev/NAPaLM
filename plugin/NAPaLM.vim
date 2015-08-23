@@ -41,7 +41,7 @@ let g:NAPaLMPrintToken = "NNNNAPaLMMMM"
 "Returns: void
 " 
 function! g:NAPaLMPrintArgs()
-
+    
     " Get line and number
     let currLineNumber = line('.') 
     let currLine = getline('.')
@@ -50,25 +50,35 @@ function! g:NAPaLMPrintArgs()
     end
 
     " Extract method name
-    let methodName = matchstr(currLine, '\vmethod\s+\zs\w+\ze\(') 
+    let methodName = matchstr(currLine, '\v\s+\zs\S+\ze\(') 
     if methodName == ''
         return
     end
+    " Get file type formater 
+    let formatter = s:NAPaLMGetSingleFormatter()
+    
+    " Replace name and var
+    let printStatement = substitute(formatter, "${name}", methodName, "")
+    call s:NAPaLMAppend(currLineNumber, printStatement)
 
-    call append(currLineNumber ,'println("\n' . methodName . '")//'.g:NAPaLMPrintToken )
     let currLineNumber += 1
-
+    let formatter = s:NAPaLMGetVarFormatter()
+    
     " Extract args
     let argsStr = matchstr(currLine, '\v\(\zs.*\ze\)' )
     let argsSplit = split(argsStr, ',')
     let i = 0
     let splitLen = len(argsSplit)
     while i < splitLen
-        "let arg = argsSplit[i]
-        "echom 'SP ' . arg
         let arg = matchstr(argsSplit[i], '\v\s*\w+\s+\zs\w+\ze') 
-        "echom 'SP ' . arg
-        call append(currLineNumber, 'println("'.arg.' = "+'.arg.')//'.g:NAPaLMPrintToken )
+        if arg == '' 
+            continue
+        end
+        let printStatement = substitute(formatter      , "${name}" , arg , "")
+        let printStatement = substitute(printStatement , "${var}"  , arg , "")
+
+        call s:NAPaLMAppend(currLineNumber, printStatement)
+
         let currLineNumber += 1
         let i += 1
     endwhile
@@ -85,8 +95,8 @@ endfunction
 function! g:NAPaLMPrintVar()
 
     " Get the current line and the line number
-    let currLineNumber = line('.') 
-    let currLine = getline('.')
+    let currLineNumber = line('.')
+    let currLine       = getline('.')
     if currLine == ''
         return
     end
@@ -95,9 +105,28 @@ function! g:NAPaLMPrintVar()
     if varName == '' 
         return
     end
+    " Get file type formater 
+    let formatter = s:NAPaLMGetVarFormatter()
+    
+    " Replace name and var
+    let printStatement = substitute(formatter      , "${name}" , varName , "")
+    let printStatement = substitute(printStatement , "${var}"  , varName , "")
 
     " Add print statement
-    call append(currLineNumber ,'println("' . varName . ' = "+'.varName.')//'.g:NAPaLMPrintToken )
+    call s:NAPaLMAppend(currLineNumber, printStatement)
+endfunction
+
+" ============================================================================
+"Function: s:NAPaLMAppend(linNumber, printStatement) 
+" Appends the given print statement at the provided line number
+"Args:
+" lineNumer      - The line number to insert the print statement at
+" printStatement - The print statement to append the give line number
+"Returns: void
+"
+function! s:NAPaLMAppend(lineNumber, printStatement)
+    let commentString = s:NAPaLMGetCommentString()
+    call append(a:lineNumber , a:printStatement . ' ' .  commentString . ' ' .  g:NAPaLMPrintToken )
 endfunction
 
 " ============================================================================
@@ -107,6 +136,8 @@ endfunction
 "Returns: void
 "
 function! g:NAPaLMComment()
+    let commentString = s:NAPaLMGetCommentString()
+    " Regex escape comment string
    execute 's/\v.*'.g:NAPaLMPrintToken.'/\/\/&'
 endfunction
 
@@ -117,6 +148,8 @@ endfunction
 "Returns: void
 "
 function! g:NAPaLMUncomment()
+    let commentString = s:NAPaLMGetCommentString()
+    " Regex escape comment string
     execute 's/\v/\/\\zs.*'.g:NAPaLMPrintToken.'/&'
 endfunction 
 
@@ -133,23 +166,117 @@ endfunction
 " SECTION: Language definitions 
 " ============================================================================
 " Language def structure
-" LangName : ['print statement', 'single line comment']
+" LangName : ['single print', 'var print', 'single line comment']
 "
-" Print statement
+" Single print statement
+"  This token "${name}" is where the variable name will be printed 
+"
+" Var print statement
 "  This token "${name}" is where the variable name will be printed 
 "  This token "${var}" is where variable will be printed
 "
+" Single line comment
+"  The string that does a single line coment for the lang
+"
 let s:NAPaLMLanguageDefs = {
-    \   'Java'      : ['System.out.println("${name} = " + ${var});', '//'],
-    \   'C'         : ['', '//'],
-    \   'C++'       : ['', '//'],
-    \   'C#'        : ['', '//'],
-    \   'Python'    : ['print("${name} = " + ${var})', '#'],
-    \   'VimScript' : ['echo "${name} = " + ${var}', '"'],
+    \  'java' : ['System.out.println("${name}");', 
+    \            'System.out.println("${name} = " + ${var});' , 
+    \            '//'
+    \            ],
+    \  'c'    : ['printf("${name}");',
+    \            'printf("${name}");', 'printf("${name} = %s\n", ${var});',
+    \            '//'
+    \            ],
+    \  'cpp'  : ['cout << "${name}"',
+    \            'cout << "${name} = " << ${var};',
+    \            '//'],
+    \  'cs'   : ['Console.WriteLine("${name}")',
+    \            'Console.WriteLine("${name} = " + ${var});',
+    \            '//'],
+    \  'py'   : ['print("${name}")',
+    \            'print("${name} = " + ${var})',
+    \            '#'],
+    \  'vim'  : ['echo "${name}"',
+    \            'echo "${name} = " . ${var}',
+    \            '"'],
+    \  'javascript'   : ['console.log("${name}");',
+    \                    'console.log("${name} = " + ${var});',
+    \                    '//'],
     \}
 
-let g:NAPaLMCustomLanguageDefs={}
+if exists("g:NAPaLMCustomLanguageDefs") == 0
+    let g:NAPaLMCustomLanguageDefs={}
+endif
 "
+" The formatter to use when there is no langdef availabe
+let g:NAPaLMNullFormatter = 'NAPaLM : No formatter available ... read the docs to find out how to add one :P'
+
+" ============================================================================
+"Function: s:NAPaLMGetLangDef() 
+"Args:
+"Returns: The langdef for the current file.
+"
+function s:NAPaLMGetLangDef()
+    let l:currFileType = &filetype
+    echom "\nCURR FILE TYPE " . l:currFileType
+    " Check custom lang defs
+    echom "Checking custom lang defs"
+    let l:custLangDef = get(g:NAPaLMCustomLanguageDefs, l:currFileType, [])
+    if l:custLangDef != [] 
+        echom "GOT CUSTOM"
+        return l:custLangDef
+    endif
+    echom "Checking default lang defs"
+    let l:defaultLangDef = get(s:NAPaLMLanguageDefs, l:currFileType, [] )
+    if l:defaultLangDef != [] 
+        echom "GOT DEFAULT"
+        return l:defaultLangDef
+    endif
+    echom "Leaving with nothing"
+    return [] 
+endfunction
+
+" ============================================================================
+"Function: s:NAPaLMGetSingleFormatter()
+"Args:
+"Returns: A formatter string for a single print statement for the current 
+"         filetype.
+"
+function! s:NAPaLMGetSingleFormatter()
+    let currLangDef = s:NAPaLMGetLangDef()
+    if currLangDef == [] 
+        return g:NAPaLMNullFormatter
+    endif
+    return currLangDef[0] 
+endfunction
+
+" ============================================================================
+"Function: s:NAPaLMGetVarFormatter()  
+"Args:
+"Returns: A formatter string for a var print statement for the current 
+"         filetype.
+"
+function! s:NAPaLMGetVarFormatter()
+    let currLangDef = s:NAPaLMGetLangDef()
+    if currLangDef == [] 
+        return g:NAPaLMNullFormatter
+    endif
+    return currLangDef[1] 
+endfunction
+
+" ============================================================================
+"Function: s:NAPaLMGetCommentString()  
+"Args:
+"Returns: The comment string for the current filetype.
+"
+function! s:NAPaLMGetCommentString() 
+    let currLangDef = s:NAPaLMGetLangDef()
+    if currLangDef == [] 
+        return g:NAPaLMNullFormatter
+    endif
+    return currLangDef[2] 
+endfunction
+
 " ============================================================================
 " SECTION: Default key mappings
 " ============================================================================

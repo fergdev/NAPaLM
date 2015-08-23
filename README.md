@@ -15,7 +15,15 @@ The aim of this project to automate the writing of debug print statements, so yo
 #### Remove all NAPaLM print statements
 
 #### Easy custom language support 
-
+Custom languages can be added to NAPaLM by following the pattern below.
+NAPaLM needs to know how to fomat a simple print statement, a variable print statement and the comment string for the language.
+```
+let g:NAPaLMCustomLanguageDefs = {
+    \  'umajin' : ['println("${name}")',
+    \              'println("${name} = " + ${var})',
+    \              '//'],
+    \}
+``` 
 ## Default Supported Languages
 To start with NAPaLM wil support the top 5 programming languages on TIOBE [TIOBE](www.tiobe.com/index.php/tiobe_index).
 
@@ -24,6 +32,8 @@ To start with NAPaLM wil support the top 5 programming languages on TIOBE [TIOBE
 3. C++
 4. C#
 5. Python
+
+Vimscript and JavaScript have been added to made my life easier :P.
 
 ## Default key mappings
 ```
