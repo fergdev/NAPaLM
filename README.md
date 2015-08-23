@@ -17,7 +17,8 @@ The aim of this project to automate the writing of debug print statements, so yo
 #### Easy custom language support 
 
 ## Default Supported Languages
-To start with NAPaLM wil support the top 5 programming languages on TIOBE
+To start with NAPaLM wil support the top 5 programming languages on TIOBE [TIOBE](www.tiobe.com/index.php/tiobe_index).
+
 1. Java
 2. C
 3. C++
@@ -25,8 +26,10 @@ To start with NAPaLM wil support the top 5 programming languages on TIOBE
 5. Python
 
 ## Default key mappings
+```
 <Leader>pa Print function arguments
 <Leader>pv Print variable
 <Leader>pc Comment out print statements
 <Leader>pC Uncomment out print statements
 <Leader>pd Delete all NAPaLM print statements
+```
