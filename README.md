@@ -6,15 +6,15 @@ The aim of this project to automate the writing of debug print statements, so yo
 
 ## Features
 
-### Print variable 
+#### Print variable 
 
-### Print method arguments
+#### Print method arguments
 
-### Comment (toggle) all NAPaLM print statements
+#### Comment (toggle) all NAPaLM print statements
 
-### Remove all NAPaLM print statements
+#### Remove all NAPaLM print statements
 
-### Easy custom language support 
+#### Easy custom language support 
 
 ## Default Supported Languages
 To start with NAPaLM wil support the top 5 programming languages on TIOBE
