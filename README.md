@@ -6,9 +6,28 @@ The aim of this project to automate the writing of debug print statements, so yo
 
 ## Features
 
-#### Print variable 
+### Print variable 
+The simplest use case for NAPaLM is printing a variable to the console. Below is an example in Java, where we have a string we want printed to the console.
+```
+    public class VarTest {
+        public static void main(String[] args){
+            String helloString = "Hello, World";
+        }
+    }
+```
 
-#### Print method arguments
+The default mapping for variable print is <Leader>pa. Moving the cursor the line containing the variable and entering the variable mapping will generate a print statement below the current line.
+
+```
+    public class VarTest {
+        public static void main(String[] args){
+            String helloString = "Hello, World";
+            System.out.println("helloString = " + helloString); // NNNNAPaLMMMM
+        }
+    }
+```
+
+### Print method arguments
 
 #### Comment (toggle) all NAPaLM print statements
 
