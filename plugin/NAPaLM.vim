@@ -218,21 +218,16 @@ let g:NAPaLMNullFormatter = 'NAPaLM : No formatter available ... read the docs t
 "
 function s:NAPaLMGetLangDef()
     let l:currFileType = &filetype
-    echom "\nCURR FILE TYPE " . l:currFileType
     " Check custom lang defs
-    echom "Checking custom lang defs"
     let l:custLangDef = get(g:NAPaLMCustomLanguageDefs, l:currFileType, [])
     if l:custLangDef != [] 
-        echom "GOT CUSTOM"
         return l:custLangDef
     endif
-    echom "Checking default lang defs"
+    " Check default lang defs
     let l:defaultLangDef = get(s:NAPaLMLanguageDefs, l:currFileType, [] )
     if l:defaultLangDef != [] 
-        echom "GOT DEFAULT"
         return l:defaultLangDef
     endif
-    echom "Leaving with nothing"
     return [] 
 endfunction
 

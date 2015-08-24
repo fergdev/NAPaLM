@@ -24,6 +24,14 @@ let g:NAPaLMCustomLanguageDefs = {
     \              '//'],
     \}
 ``` 
+You can even override the default language definitions. The custom language definition map is checked before the default language definition. 
+```
+let g:NAPaLMCustomLanguageDefs = {
+    \ 'java' : ['System.out.println("!!!!${name}!!!!");', 
+    \            'System.out.println("!!!!${name} = " + ${var} + "!!!!");' , 
+    \            '//'
+    \            ],
+```
 ## Default Supported Languages
 To start with NAPaLM wil support the top 5 programming languages on TIOBE [TIOBE](www.tiobe.com/index.php/tiobe_index).
 
