@@ -281,15 +281,11 @@ endfunction
 "         available for the given type, the defualt formatter is returned.
 "
 function! s:NAPaLMGetVarTypeFormatter(varType) 
-    echom "VARTYPE " . a:varType
     let l:currLangDef = s:NAPaLMGetLangDef()
-    echom "Hello"
     if l:currLangDef == [] 
         return g:NAPaLMNullFormatter
     endif
-    echom "World"
     let l:formatterMap = l:currLangDef[2]
-    echom "LEN " . len(l:formatterMap)
     let l:varFormatter = get(l:formatterMap, a:varType, "" )
     if l:varFormatter == "" 
         return l:currLangDef[1] 
