@@ -62,7 +62,7 @@ function! g:NAPaLMPrintArgs()
     call s:NAPaLMAppend(currLineNumber, printStatement)
 
     let currLineNumber += 1
-    let formatter = s:NAPaLMGetVarFormatter()
+    "let formatter = s:NAPaLMGetVarFormatter()
     
     " Extract args
     let argsStr = matchstr(currLine, '\v\(\zs.*\ze\)' )
@@ -70,12 +70,15 @@ function! g:NAPaLMPrintArgs()
     let i = 0
     let splitLen = len(argsSplit)
     while i < splitLen
+        let type = matchstr(argsSplit[i], '\v\s*\zs\w+\ze\s+\w+')
         let arg = matchstr(argsSplit[i], '\v\s*\w+\s+\zs\w+\ze') 
         if arg == '' 
             continue
         end
-        let printStatement = substitute(formatter      , "${name}" , arg , "")
-        let printStatement = substitute(printStatement , "${var}"  , arg , "")
+        let varFormatter = s:NAPaLMGetVarTypeFormatter(type)  
+
+        let printStatement = substitute(varFormatter, "${name}" , arg , "g")
+        let printStatement = substitute(printStatement , "${var}"  , arg , "g")
 
         call s:NAPaLMAppend(currLineNumber, printStatement)
 
@@ -181,26 +184,38 @@ endfunction
 let s:NAPaLMLanguageDefs = {
     \  'java' : ['System.out.println("${name}");', 
     \            'System.out.println("${name} = " + ${var});' , 
+    \           {},
     \            '//'
     \            ],
     \  'c'    : ['printf("${name}");',
-    \            'printf("${name}");', 'printf("${name} = %s\n", ${var});',
+    \            'printf("${name} = %s\n", ${var});',
+    \            {
+    \                'char'   : 'printf("${name} = %s\n", ${var});',
+    \                'int'    : 'printf("${name} = %d\n", ${var});',
+    \                'float'  : 'printf("${name} = %f\n", ${var});',
+    \                'double' : 'printf("${name} = %f\n", ${var});',
+    \            },
     \            '//'
     \            ],
     \  'cpp'  : ['cout << "${name}"',
-    \            'cout << "${name} = " << ${var};',
+    \            'cout << "${name} = " << ${var} << "\n";',
+    \            {},
     \            '//'],
     \  'cs'   : ['Console.WriteLine("${name}")',
     \            'Console.WriteLine("${name} = " + ${var});',
+    \            {},
     \            '//'],
     \  'py'   : ['print("${name}")',
     \            'print("${name} = " + ${var})',
+    \            {},
     \            '#'],
     \  'vim'  : ['echo "${name}"',
     \            'echo "${name} = " . ${var}',
+    \            {},
     \            '"'],
     \  'javascript'   : ['console.log("${name}");',
     \                    'console.log("${name} = " + ${var});',
+    \                    {},
     \                    '//'],
     \}
 
@@ -260,6 +275,30 @@ function! s:NAPaLMGetVarFormatter()
 endfunction
 
 " ============================================================================
+"Function: s:NAPaLMGetVarTypeFormatter()  
+"Args:
+"Returns: Gets the print formater for a give var type. If a formatter is not
+"         available for the given type, the defualt formatter is returned.
+"
+function! s:NAPaLMGetVarTypeFormatter(varType) 
+    echom "VARTYPE " . a:varType
+    let l:currLangDef = s:NAPaLMGetLangDef()
+    echom "Hello"
+    if l:currLangDef == [] 
+        return g:NAPaLMNullFormatter
+    endif
+    echom "World"
+    let l:formatterMap = l:currLangDef[2]
+    echom "LEN " . len(l:formatterMap)
+    let l:varFormatter = get(l:formatterMap, a:varType, "" )
+    if l:varFormatter == "" 
+        return l:currLangDef[1] 
+    endif
+
+    return l:varFormatter 
+endfunction
+
+" ============================================================================
 "Function: s:NAPaLMGetCommentString()  
 "Args:
 "Returns: The comment string for the current filetype.
@@ -269,7 +308,7 @@ function! s:NAPaLMGetCommentString()
     if currLangDef == [] 
         return g:NAPaLMNullFormatter
     endif
-    return currLangDef[2] 
+    return currLangDef[3] 
 endfunction
 
 " ============================================================================

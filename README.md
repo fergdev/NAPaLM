@@ -15,8 +15,10 @@ The aim of this project to automate the writing of debug print statements, so yo
 #### Remove all NAPaLM print statements
 
 #### Easy custom language support 
+
 Custom languages can be added to NAPaLM by following the pattern below.
 NAPaLM needs to know how to fomat a simple print statement, a variable print statement and the comment string for the language.
+
 ```
 let g:NAPaLMCustomLanguageDefs = {
     \  'umajin' : ['println("${name}")',
@@ -24,13 +26,33 @@ let g:NAPaLMCustomLanguageDefs = {
     \              '//'],
     \}
 ``` 
+
 You can even override the default language definitions. The custom language definition map is checked before the default language definition. 
+
 ```
 let g:NAPaLMCustomLanguageDefs = {
     \ 'java' : ['System.out.println("!!!!${name}!!!!");', 
     \            'System.out.println("!!!!${name} = " + ${var} + "!!!!");' , 
     \            '//'
     \            ],
+    \ }
+```
+
+There is also support for languaes where you need a specific print statement for different datatypes. A good example is C where you need provide a formatter string for each data type.
+
+```
+let g:NAPaLMCustomLanguageDefs = {
+      'c'    : ['printf("${name}");',
+    \            'printf("${name} = %s\n", ${var});',
+    \            {
+    \                'char'   : 'printf("${name} = %s\n", ${var});',
+    \                'int'    : 'printf("${name} = %d\n", ${var});',
+    \                'float'  : 'printf("${name} = %f\n", ${var});',
+    \                'double' : 'printf("${name} = %f\n", ${var});',
+    \            },
+    \            '//'
+    \            ],
+    \ }
 ```
 ## Default Supported Languages
 To start with NAPaLM wil support the top 5 programming languages on TIOBE [TIOBE](www.tiobe.com/index.php/tiobe_index).
