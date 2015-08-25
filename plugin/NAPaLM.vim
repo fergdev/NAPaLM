@@ -44,6 +44,7 @@ function! g:NAPaLMPrintArgs()
     
     " Get line and number
     let currLineNumber = line('.') 
+    let initialLineNumber = currLineNumber
     let currLine = getline('.')
     if currLine == ''
         return
@@ -56,13 +57,15 @@ function! g:NAPaLMPrintArgs()
     end
     " Get file type formater 
     let formatter = s:NAPaLMGetSingleFormatter()
-    
+    if formatter == g:NAPaLMNullFormatter 
+        echom "No Formatter available"
+        return
+    end
     " Replace name and var
     let printStatement = substitute(formatter, "${name}", methodName, "")
     call s:NAPaLMAppend(currLineNumber, printStatement)
 
     let currLineNumber += 1
-    "let formatter = s:NAPaLMGetVarFormatter()
     
     " Extract args
     let argsStr = matchstr(currLine, '\v\(\zs.*\ze\)' )
@@ -85,6 +88,9 @@ function! g:NAPaLMPrintArgs()
         let currLineNumber += 1
         let i += 1
     endwhile
+    
+    " Auto indent lines
+    exec 'normal! '.initialLineNumber.'G='.currLineNumber.'G'
 endfunction
 
 " ============================================================================
@@ -117,6 +123,38 @@ function! g:NAPaLMPrintVar()
 
     " Add print statement
     call s:NAPaLMAppend(currLineNumber, printStatement)
+
+    " Fix indentation
+    let nextLineNumber = currLineNumber + 1 
+    exec 'normal! '.currLineNumber.'G='.nextLineNumber.'G'
+endfunction
+
+
+" ============================================================================
+"Function: g:NAPaLMPrintLine()
+"           Gets the current line and puts it into a print statement. 
+"Args:
+"Returns: void
+"
+function! g:NAPaLMPrintLine()
+    " Get the current line and the line number
+    let currLineNumber = line('.')
+    let currLine       = getline('.')
+    if currLine == ''
+        return
+    end
+    " Get single type formater 
+    let formatter = s:NAPaLMGetSingleFormatter()
+    
+    " Replace name with the current line 
+    let printStatement = substitute(formatter      , "${name}" , currLine , "")
+
+    " Add print statement
+    call s:NAPaLMAppend(currLineNumber, printStatement)
+
+    " Fix indentation
+    let nextLineNumber = currLineNumber + 1 
+    exec 'normal! '.currLineNumber.'G='.nextLineNumber.'G'
 endfunction
 
 " ============================================================================
@@ -205,7 +243,7 @@ let s:NAPaLMLanguageDefs = {
     \            'Console.WriteLine("${name} = " + ${var});',
     \            {},
     \            '//'],
-    \  'py'   : ['print("${name}")',
+    \  'python'  : ['print("${name}")',
     \            'print("${name} = " + ${var})',
     \            {},
     \            '#'],
@@ -224,7 +262,7 @@ if exists("g:NAPaLMCustomLanguageDefs") == 0
 endif
 "
 " The formatter to use when there is no langdef availabe
-let g:NAPaLMNullFormatter = 'NAPaLM : No formatter available ... read the docs to find out how to add one :P'
+let g:NAPaLMNullFormatter = 'NAPaLM : No formatter available'
 
 " ============================================================================
 "Function: s:NAPaLMGetLangDef() 
@@ -318,10 +356,12 @@ if g:NAPaLMDebug == 1
     nnoremap <Leader>pc :call g:NAPaLMComment()<CR>   " Comment out print statements
     nnoremap <Leader>pC :call g:NAPaLMUnComment()<CR> " UnComment out print statements
     nnoremap <Leader>pd :call g:NAPaLMDelete()<CR>    " Delete all print statements
+    nnoremap <Leader>pl :call g:NAPaLMPrintLine()<CR> " Print current line
 else
     nnoremap <silent> <Leader>pa :call g:NAPaLMPrintArgs()<CR> " Print args
     nnoremap <silent> <Leader>pv :call g:NAPaLMPrintVar()<CR>  " Print var
     nnoremap <silent> <Leader>pc :call g:NAPaLMComment()<CR>   " Comment out print statements
     nnoremap <silent> <Leader>pC :call g:NAPaLMUnComment()<CR> " UnComment out print statements
     nnoremap <silent> <Leader>pd :call g:NAPaLMDelete()<CR>    " Delete all print statements
+    nnoremap <silent> <Leader>pl :call g:NAPaLMPrintLine()<CR> " Print current line
 end
