@@ -9,4 +9,5 @@
 main()
 {
     char* output = "Hello, World!";
+    printf("output = %s\n", output); // NNNNAPaLMMMM
 }

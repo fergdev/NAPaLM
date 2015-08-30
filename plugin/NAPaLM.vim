@@ -207,54 +207,80 @@ endfunction
 " SECTION: Language definitions 
 " ============================================================================
 " Language def structure
-" LangName : ['single print', 'var print', 'single line comment']
+" LangName : {'single print', 'var print', 'single line comment'}
 "
-" Single print statement
+" Single print statement - 'sps' 
 "  This token "${name}" is where the variable name will be printed 
 "
-" Var print statement
+" Defulat Var print statement - 'vps'
 "  This token "${name}" is where the variable name will be printed 
 "  This token "${var}" is where variable will be printed
 "
-" Single line comment
+" Object print statements - 'ops'
+"  Map of print statements for different ojbect types
+"  Same formate as Var print statement
+"
+" Single line comment 'comment'
 "  The string that does a single line coment for the lang
 "
+" Args placement pattern - 'app'
+"  A pattern to search for to place args print statements, needed for cpp
+"  to place print statements after next {.
+"
 let s:NAPaLMLanguageDefs = {
-    \  'java' : ['System.out.println("${name}");', 
-    \            'System.out.println("${name} = " + ${var});' , 
-    \           {},
-    \            '//'
-    \            ],
-    \  'c'    : ['printf("${name}");',
-    \            'printf("${name} = %s\n", ${var});',
-    \            {
+    \  'java' : { 
+    \             'sps' : 'System.out.println("${name}");', 
+    \             'vps' : 'System.out.println("${name} = " + ${var})' , 
+    \             'ops' : {},
+    \             'comment' : '//',
+    \             'app' : '{'
+    \            },
+    \  'c'    : {
+    \             'sps' : 'printf("${name}");',
+    \             'vps' : 'printf("${name} = %s\n", ${var});',
+    \             'ops' :
+    \             {
     \                'char'   : 'printf("${name} = %s\n", ${var});',
     \                'int'    : 'printf("${name} = %d\n", ${var});',
     \                'float'  : 'printf("${name} = %f\n", ${var});',
     \                'double' : 'printf("${name} = %f\n", ${var});',
+    \             },
+    \            'comment' : '//',
+    \            'app'     : '{'
     \            },
-    \            '//'
-    \            ],
-    \  'cpp'  : ['cout << "${name}"',
-    \            'cout << "${name} = " << ${var} << "\n";',
-    \            {},
-    \            '//'],
-    \  'cs'   : ['Console.WriteLine("${name}")',
-    \            'Console.WriteLine("${name} = " + ${var});',
-    \            {},
-    \            '//'],
-    \  'python'  : ['print("${name}")',
-    \            'print("${name} = " + ${var})',
-    \            {},
-    \            '#'],
-    \  'vim'  : ['echo "${name}"',
-    \            'echo "${name} = " . ${var}',
-    \            {},
-    \            '"'],
-    \  'javascript'   : ['console.log("${name}");',
-    \                    'console.log("${name} = " + ${var});',
-    \                    {},
-    \                    '//'],
+    \  'cpp'  : {
+    \            'sps' : 'cout << "${name}"',
+    \            'vps' : 'cout << "${name} = " << ${var} << "\n";',
+    \            'ops' : {},
+    \            'comment' : '//',
+    \            'app' : '{'
+    \            },
+    \  'cs'   : {
+    \            'sps' : 'Console.WriteLine("${name}")',
+    \            'vps' : 'Console.WriteLine("${name} = " + ${var});',
+    \            'ops' : {},
+    \            'comment' : '//',
+    \            'app'     : '{'
+    \           },
+    \  'python'  : {
+    \            'sps' : 'print("${name}")',
+    \            'vps' : 'print("${name} = " + ${var})',
+    \            'ops' : {},
+    \            'comment' : '#',
+    \            },
+    \  'vim'  : {
+    \            'sps' : 'echo "${name}"',
+    \            'vps' : 'echo "${name} = " . ${var}',
+    \            'ops' : {},
+    \            'comment' : '"',
+    \           },
+    \  'javascript'   : {
+    \           'sps' : 'console.log("${name}");',
+    \           'vps' : 'console.log("${name} = " + ${var});',
+    \           'ops' : {},
+    \           'comment' : '//',
+    \           'app'     : '{'
+    \           },
     \}
 
 if exists("g:NAPaLMCustomLanguageDefs") == 0
@@ -272,16 +298,16 @@ let g:NAPaLMNullFormatter = 'NAPaLM : No formatter available'
 function s:NAPaLMGetLangDef()
     let l:currFileType = &filetype
     " Check custom lang defs
-    let l:custLangDef = get(g:NAPaLMCustomLanguageDefs, l:currFileType, [])
-    if l:custLangDef != [] 
+    let l:custLangDef = get(g:NAPaLMCustomLanguageDefs, l:currFileType, {})
+    if l:custLangDef != {} 
         return l:custLangDef
     endif
     " Check default lang defs
-    let l:defaultLangDef = get(s:NAPaLMLanguageDefs, l:currFileType, [] )
-    if l:defaultLangDef != [] 
+    let l:defaultLangDef = get(s:NAPaLMLanguageDefs, l:currFileType, {})
+    if l:defaultLangDef != {} 
         return l:defaultLangDef
     endif
-    return [] 
+    return {} 
 endfunction
 
 " ============================================================================
@@ -292,10 +318,10 @@ endfunction
 "
 function! s:NAPaLMGetSingleFormatter()
     let currLangDef = s:NAPaLMGetLangDef()
-    if currLangDef == [] 
+    if currLangDef == {} 
         return g:NAPaLMNullFormatter
     endif
-    return currLangDef[0] 
+    return currLangDef['sps'] 
 endfunction
 
 " ============================================================================
@@ -306,10 +332,10 @@ endfunction
 "
 function! s:NAPaLMGetVarFormatter()
     let currLangDef = s:NAPaLMGetLangDef()
-    if currLangDef == [] 
+    if currLangDef == {} 
         return g:NAPaLMNullFormatter
     endif
-    return currLangDef[1] 
+    return currLangDef['vps'] 
 endfunction
 
 " ============================================================================
@@ -320,13 +346,13 @@ endfunction
 "
 function! s:NAPaLMGetVarTypeFormatter(varType) 
     let l:currLangDef = s:NAPaLMGetLangDef()
-    if l:currLangDef == [] 
+    if l:currLangDef == {} 
         return g:NAPaLMNullFormatter
     endif
-    let l:formatterMap = l:currLangDef[2]
+    let l:formatterMap = l:currLangDef['ops']
     let l:varFormatter = get(l:formatterMap, a:varType, "" )
     if l:varFormatter == "" 
-        return l:currLangDef[1] 
+        return l:currLangDef['vps'] 
     endif
 
     return l:varFormatter 
@@ -339,10 +365,24 @@ endfunction
 "
 function! s:NAPaLMGetCommentString() 
     let currLangDef = s:NAPaLMGetLangDef()
-    if currLangDef == [] 
+    if currLangDef == {} 
         return g:NAPaLMNullFormatter
     endif
-    return currLangDef[3] 
+    return currLangDef['comment'] 
+endfunction
+
+" ============================================================================
+"Function: s:NAPaLMGetArgsPlacementPattern()
+"Args:
+"Returns: The args placement pattern for the current language
+"
+function! s:NAPaLMGetArgsPlacementPattern() 
+    let l:currLangDef = s:NAPaLMGetLangDef()
+    if l:currLangDef == {} 
+        return g:NAPaLMNullFormatter
+    endif
+    let l:argsPlacementPattern = get(l:currLangDef, 'app', '')
+    return l:argsPlacementPattern 
 endfunction
 
 " ============================================================================

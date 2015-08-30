@@ -40,9 +40,9 @@ NAPaLM needs to know how to fomat a simple print statement, a variable print sta
 
 ```
 let g:NAPaLMCustomLanguageDefs = {
-    \  'umajin' : ['println("${name}")',
+    \  'umajin' : {'println("${name}")',
     \              'println("${name} = " + ${var})',
-    \              '//'],
+    \              '//'},
     \}
 ``` 
 
@@ -50,10 +50,10 @@ You can even override the default language definitions. The custom language defi
 
 ```
 let g:NAPaLMCustomLanguageDefs = {
-    \ 'java' : ['System.out.println("!!!!${name}!!!!");', 
-    \            'System.out.println("!!!!${name} = " + ${var} + "!!!!");' , 
-    \            '//'
-    \            ],
+    \ 'java' : {'sps' : 'System.out.println("!!!!${name}!!!!");', 
+    \           'vps' : 'System.out.println("!!!!${name} = " + ${var} + "!!!!");' , 
+    \           'comment' : '//'
+    \            },
     \ }
 ```
 
@@ -61,16 +61,19 @@ There is also support for languaes where you need a specific print statement for
 
 ```
 let g:NAPaLMCustomLanguageDefs = {
-      'c'    : ['printf("${name}");',
-    \            'printf("${name} = %s\n", ${var});',
-    \            {
+    \  'c'    : {
+    \             'sps' : 'printf("${name}");',
+    \             'vps' : 'printf("${name} = %s\n", ${var});',
+    \             'ops' :
+    \             {
     \                'char'   : 'printf("${name} = %s\n", ${var});',
     \                'int'    : 'printf("${name} = %d\n", ${var});',
     \                'float'  : 'printf("${name} = %f\n", ${var});',
     \                'double' : 'printf("${name} = %f\n", ${var});',
+    \             },
+    \            'comment' : '//',
+    \            'app'     : '{'
     \            },
-    \            '//'
-    \            ],
     \ }
 ```
 ## Default Supported Languages
