@@ -3,7 +3,7 @@
 " Description: vim global plugin that provides a macro for inserting print 
 "              statements for any program language.
 " Maintainer:  Fergus Hewson - fergdev on github. 
-" Last Change: 23 August 2015 
+" Last Change: See change log at https://github.com/fergdev/NAPaLM 
 " License:     GNU GENERAL PUBLIC LICENSE
 "
 " ============================================================================
@@ -22,7 +22,6 @@ let loaded_NAPaLM = 1
 "for line continuation - i.e dont want C in &cpo
 let s:old_cpo = &cpo
 set cpo&vim
-
 
 " ============================================================================
 " SECTION: My printing functions - I never want to have to type a println 
@@ -43,54 +42,58 @@ let g:NAPaLMPrintToken = "NNNNAPaLMMMM"
 function! g:NAPaLMPrintArgs()
     
     " Get line and number
-    let currLineNumber = line('.') 
-    let initialLineNumber = currLineNumber
-    let currLine = getline('.')
-    if currLine == ''
+    let l:currLineNumber = line('.') 
+    let l:initialLineNumber = l:currLineNumber
+    let l:currLine = getline('.')
+    if l:currLine == ''
         return
     end
 
     " Extract method name
-    let methodName = matchstr(currLine, '\v\s+\zs\S+\ze\(') 
-    if methodName == ''
+    let l:methodName = matchstr(currLine, '\v\s+\zs\S+\ze\(') 
+    if l:methodName == ''
         return
     end
     " Get file type formater 
-    let formatter = s:NAPaLMGetSingleFormatter()
-    if formatter == g:NAPaLMNullFormatter 
+    let l:formatter = s:NAPaLMGetSingleFormatter()
+    if l:formatter == g:NAPaLMNullFormatter 
         echom "No Formatter available"
         return
     end
-    " Replace name and var
-    let printStatement = substitute(formatter, "${name}", methodName, "")
-    call s:NAPaLMAppend(currLineNumber, printStatement)
 
-    let currLineNumber += 1
+    " Find line after the line that matches the argument placement pattern
+    let l:currLineNumber = s:NAPaLMGetArgsPlacementLine(currLineNumber)  
+    
+    " Replace name and var
+    let l:printStatement = substitute(l:formatter, "${name}", l:methodName, "")
+    call s:NAPaLMAppend(l:currLineNumber, l:printStatement)
+
+    let l:currLineNumber += 1
     
     " Extract args
-    let argsStr = matchstr(currLine, '\v\(\zs.*\ze\)' )
-    let argsSplit = split(argsStr, ',')
-    let i = 0
-    let splitLen = len(argsSplit)
-    while i < splitLen
-        let type = matchstr(argsSplit[i], '\v\s*\zs\w+\ze\s+\w+')
-        let arg = matchstr(argsSplit[i], '\v\s*\w+\s+\zs\w+\ze') 
-        if arg == '' 
+    let l:argsStr = matchstr(l:currLine, '\v\(\zs.*\ze\)' )
+    let l:argsSplit = split(l:argsStr, ',')
+    let l:index = 0
+    let l:splitLen = len(l:argsSplit)
+    while l:index < l:splitLen
+        let l:type = matchstr(l:argsSplit[l:index], '\v\zs\w+\ze\s+\w+$')
+        let l:arg = matchstr(l:argsSplit[l:index], '\v\zs\w+\ze$') 
+        if l:arg == '' 
             continue
         end
-        let varFormatter = s:NAPaLMGetVarTypeFormatter(type)  
+        let l:varFormatter = s:NAPaLMGetVarTypeFormatter(l:type)  
 
-        let printStatement = substitute(varFormatter, "${name}" , arg , "g")
-        let printStatement = substitute(printStatement , "${var}"  , arg , "g")
+        let l:printStatement = substitute(l:varFormatter   , "${name}" , l:arg , "g")
+        let l:printStatement = substitute(l:printStatement , "${var}"  , l:arg , "g")
 
-        call s:NAPaLMAppend(currLineNumber, printStatement)
+        call s:NAPaLMAppend(l:currLineNumber, l:printStatement)
 
-        let currLineNumber += 1
-        let i += 1
+        let l:currLineNumber += 1
+        let l:index += 1
     endwhile
     
     " Auto indent lines
-    exec 'normal! '.initialLineNumber.'G='.currLineNumber.'G'
+    exec 'normal! '.l:initialLineNumber.'G='.l:currLineNumber.'G'
 endfunction
 
 " ============================================================================
@@ -104,29 +107,33 @@ endfunction
 function! g:NAPaLMPrintVar()
 
     " Get the current line and the line number
-    let currLineNumber = line('.')
-    let currLine       = getline('.')
-    if currLine == ''
+    let l:currLineNumber = line('.')
+    let l:currLine       = getline('.')
+    if l:currLine == ''
         return
     end
     " Extract method name
-    let varName = matchstr(currLine, '\v\zs\w+\ze\s*\=') 
-    if varName == '' 
+    let l:varName = matchstr(l:currLine, '\v\zs\w+\ze\s*\=') 
+    if l:varName == '' 
         return
     end
-    " Get file type formater 
-    let formatter = s:NAPaLMGetVarFormatter()
+    " Attempt to get variable type
+    let l:varType = matchstr(l:currLine,'\v<\zs\w.*\ze\s+\w+\s*\=')
+    let l:varType = s:NAPaLMProcessVarType(l:varType)
+
+    " Get the formatter for the print statement
+    let l:formatter = s:NAPaLMGetVarTypeFormatter(l:varType)  
     
     " Replace name and var
-    let printStatement = substitute(formatter      , "${name}" , varName , "")
-    let printStatement = substitute(printStatement , "${var}"  , varName , "")
+    let l:printStatement = substitute(l:formatter      , "${name}" , l:varName , "")
+    let l:printStatement = substitute(l:printStatement , "${var}"  , l:varName , "")
 
     " Add print statement
-    call s:NAPaLMAppend(currLineNumber, printStatement)
+    call s:NAPaLMAppend(l:currLineNumber, l:printStatement)
 
     " Fix indentation
-    let nextLineNumber = currLineNumber + 1 
-    exec 'normal! '.currLineNumber.'G='.nextLineNumber.'G'
+    let l:nextLineNumber = l:currLineNumber + 1 
+    exec 'normal! '.l:currLineNumber.'G='.l:nextLineNumber.'G'
 endfunction
 
 
@@ -138,23 +145,23 @@ endfunction
 "
 function! g:NAPaLMPrintLine()
     " Get the current line and the line number
-    let currLineNumber = line('.')
-    let currLine       = getline('.')
-    if currLine == ''
+    let l:currLineNumber = line('.')
+    let l:currLine       = getline('.')
+    if l:currLine == ''
         return
     end
     " Get single type formater 
-    let formatter = s:NAPaLMGetSingleFormatter()
+    let l:formatter = s:NAPaLMGetSingleFormatter()
     
     " Replace name with the current line 
-    let printStatement = substitute(formatter      , "${name}" , currLine , "")
+    let l:printStatement = substitute(l:formatter      , "${name}" , l:currLine , "")
 
     " Add print statement
-    call s:NAPaLMAppend(currLineNumber, printStatement)
+    call s:NAPaLMAppend(l:currLineNumber, l:printStatement)
 
     " Fix indentation
-    let nextLineNumber = currLineNumber + 1 
-    exec 'normal! '.currLineNumber.'G='.nextLineNumber.'G'
+    let l:nextLineNumber = l:currLineNumber + 1 
+    exec 'normal! '.l:currLineNumber.'G='.l:nextLineNumber.'G'
 endfunction
 
 " ============================================================================
@@ -166,8 +173,8 @@ endfunction
 "Returns: void
 "
 function! s:NAPaLMAppend(lineNumber, printStatement)
-    let commentString = s:NAPaLMGetCommentString()
-    call append(a:lineNumber , a:printStatement . ' ' .  commentString . ' ' .  g:NAPaLMPrintToken )
+    let l:commentString = s:NAPaLMGetCommentString()
+    call append(a:lineNumber , a:printStatement . ' ' .  l:commentString . ' ' .  g:NAPaLMPrintToken )
 endfunction
 
 " ============================================================================
@@ -177,9 +184,9 @@ endfunction
 "Returns: void
 "
 function! g:NAPaLMComment()
-    let commentString = s:NAPaLMGetCommentString()
+    let l:commentString = s:NAPaLMGetCommentString()
     " Regex escape comment string
-   execute 's/\v.*'.g:NAPaLMPrintToken.'/\/\/&'
+   silent execute 's/\v.*'.g:NAPaLMPrintToken.'/\/\/&'
 endfunction
 
 " ============================================================================
@@ -189,18 +196,19 @@ endfunction
 "Returns: void
 "
 function! g:NAPaLMUncomment()
-    let commentString = s:NAPaLMGetCommentString()
+    let l:commentString = s:NAPaLMGetCommentString()
     " Regex escape comment string
-    execute 's/\v/\/\\zs.*'.g:NAPaLMPrintToken.'/&'
+    silent execute 's/\v/\/\\zs.*'.g:NAPaLMPrintToken.'/&'
 endfunction 
 
 " ============================================================================
-"Function: g:NAPaLMPrintComment() 
+"Function: g:NAPaLMDelete() 
+" Deletes all NAPaLM inserted print statements.
 "Args:
 "Returns: void
 "
 function! g:NAPaLMDelete()
-   execute 'g/\v'.g:NAPaLMPrintToken.'/d'
+   silent execute 'g/\v'.g:NAPaLMPrintToken.'/d'
 endfunction
 
 " ============================================================================
@@ -227,59 +235,118 @@ endfunction
 "  A pattern to search for to place args print statements, needed for cpp
 "  to place print statements after next {.
 "
+" Stripped keywords - 'sk'
+"  A list of keywords to strip from variable types i.e (const,cpp) (final,java)
+"
 let s:NAPaLMLanguageDefs = {
     \  'java' : { 
-    \             'sps' : 'System.out.println("${name}");', 
-    \             'vps' : 'System.out.println("${name} = " + ${var})' , 
-    \             'ops' : {},
+    \             'sps'     : 'System.out.println("${name}");',
+    \             'vps'     : 'System.out.println("${name} = " + ${var});' ,
+    \             'ops'     : {},
     \             'comment' : '//',
-    \             'app' : '{'
+    \             'app'     : '{',
+    \             'sk'      : ['final']
     \            },
     \  'c'    : {
     \             'sps' : 'printf("${name}");',
     \             'vps' : 'printf("${name} = %s\n", ${var});',
     \             'ops' :
     \             {
-    \                'char'   : 'printf("${name} = %s\n", ${var});',
-    \                'int'    : 'printf("${name} = %d\n", ${var});',
-    \                'float'  : 'printf("${name} = %f\n", ${var});',
-    \                'double' : 'printf("${name} = %f\n", ${var});',
+    \                'char*'                  : 'printf("${name} = %s\n", ${var});',
+    \                'char'                   : 'printf("${name} = %c\n", ${var});',
+    \                'singed char'            : 'printf("${name} = %c\n", ${var});',
+    \                'unsigned char'          : 'printf("${name} = %c\n", ${var});',
+    \                'short'                  : 'printf("${name} = %hi\n", ${var});',
+    \                'short int'              : 'printf("${name} = %hi\n", ${var});',
+    \                'singed short'           : 'printf("${name} = %hi\n", ${var});',
+    \                'signed short int'       : 'printf("${name} = %hi\n", ${var});',
+    \                'unsigned short'         : 'printf("${name} = %hu\n", ${var});',
+    \                'unsigned short int'     : 'printf("${name} = %hu\n", ${var});',
+    \                'int'                    : 'printf("${name} = %d\n", ${var});',
+    \                'signed int'             : 'printf("${name} = %d\n", ${var});',
+    \                'unsigned'               : 'printf("${name} = %u\n", ${var});',
+    \                'unsigned int'           : 'printf("${name} = %u\n", ${var});',
+    \                'long'                   : 'printf("${name} = %li\n", ${var});',
+    \                'long int'               : 'printf("${name} = %li\n", ${var});',
+    \                'singed long'            : 'printf("${name} = %li\n", ${var});',
+    \                'singed long int'        : 'printf("${name} = %li\n", ${var});',
+    \                'unsigned long'          : 'printf("${name} = %lu\n", ${var});',
+    \                'unsigned long int'      : 'printf("${name} = %lu\n", ${var});',
+    \                'long long'              : 'printf("${name} = %lli\n", ${var});',
+    \                'long long int'          : 'printf("${name} = %lli\n", ${var});',
+    \                'singed long long'       : 'printf("${name} = %lli\n", ${var});',
+    \                'singed long long int'   : 'printf("${name} = %lli\n", ${var});',
+    \                'unsigned long long'     : 'printf("${name} = %llu\n", ${var});',
+    \                'unsigned long long int' : 'printf("${name} = %llu\n", ${var});',
+    \                'float'                  : 'printf("${name} = %f\n", ${var});',
+    \                'double'                 : 'printf("${name} = %f\n", ${var});',
+    \                'long double'            : 'printf("${name} = %Lf\n", ${var});',
     \             },
     \            'comment' : '//',
-    \            'app'     : '{'
+    \            'app'     : '{',
+    \            'sk'      : ['const']
     \            },
     \  'cpp'  : {
-    \            'sps' : 'cout << "${name}"',
-    \            'vps' : 'cout << "${name} = " << ${var} << "\n";',
-    \            'ops' : {},
+    \            'sps'     : 'cout << "${name}";',
+    \            'vps'     : 'cout << "${name} = " << ${var} << "\n";',
+    \            'ops'     : {},
     \            'comment' : '//',
-    \            'app' : '{'
+    \            'app'     : '{',
+    \            'sk'      : ['const']
     \            },
     \  'cs'   : {
-    \            'sps' : 'Console.WriteLine("${name}")',
-    \            'vps' : 'Console.WriteLine("${name} = " + ${var});',
-    \            'ops' : {},
+    \            'sps'     : 'Console.WriteLine("${name}");',
+    \            'vps'     : 'Console.WriteLine("${name} = " + ${var});',
+    \            'ops'     : {},
     \            'comment' : '//',
-    \            'app'     : '{'
+    \            'app'     : '{',
+    \            'sk'      : ['const', 'readonly']
     \           },
     \  'python'  : {
-    \            'sps' : 'print("${name}")',
-    \            'vps' : 'print("${name} = " + ${var})',
-    \            'ops' : {},
+    \            'sps'     : 'print("${name}")',
+    \            'vps'     : 'print("${name} = " + ${var})',
+    \            'ops'     : {},
     \            'comment' : '#',
     \            },
     \  'vim'  : {
-    \            'sps' : 'echo "${name}"',
-    \            'vps' : 'echo "${name} = " . ${var}',
-    \            'ops' : {},
+    \            'sps'     : 'echo "${name}"',
+    \            'vps'     : 'echo "${name} = " . ${var}',
+    \            'ops'     : {},
     \            'comment' : '"',
     \           },
     \  'javascript'   : {
-    \           'sps' : 'console.log("${name}");',
-    \           'vps' : 'console.log("${name} = " + ${var});',
-    \           'ops' : {},
+    \           'sps'     : 'console.log("${name}");',
+    \           'vps'     : 'console.log("${name} = " + ${var});',
+    \           'ops'     : {},
     \           'comment' : '//',
     \           'app'     : '{'
+    \           },
+    \  'objc'   : {
+    \           'sps' : 'NSLog(@"${name}");',
+    \           'vps' : 'NSLog(@"${name} = %s", ${var});',
+    \           'ops' : 
+    \           {
+    \               'NSString'           : 'NSLog(@"${name} = %@" + ${var});',
+    \               'BOOL'               : 'NSLog(@"${name} = %d" + ${var});',
+    \               'bool'               : 'NSLog(@"${name} = %d" + ${var});',
+    \               'Boolean'            : 'NSLog(@"${name} = %d" + ${var});',
+    \               'char'               : 'NSLog(@"${name} = %c" + ${var});',
+    \               'unsigned char'      : 'NSLog(@"${name} = %c" + ${var});',
+    \               'short'              : 'NSLog(@"${name} = %hd" + ${var});',
+    \               'unsigned short'     : 'NSLog(@"${name} = %hu" + ${var});',
+    \               'int'                : 'NSLog(@"${name} = %i" + ${var});',
+    \               'usigned int'        : 'NSLog(@"${name} = %u" + ${var});',
+    \               'long'               : 'NSLog(@"${name} = %ld" + ${var});',
+    \               'unsigned long'      : 'NSLog(@"${name} = %lu" + ${var});',
+    \               'long long'          : 'NSLog(@"${name} = %lld" + ${var});',
+    \               'unsigned long long' : 'NSLog(@"${name} = %llu" + ${var});',
+    \               'float'              : 'NSLog(@"${name} = %f" + ${var});',
+    \               'double'             : 'NSLog(@"${name} = %f" + ${var});',
+    \               'long double'        : 'NSLog(@"${name} = %Lf" + ${var});',
+    \           },
+    \           'comment' : '//',
+    \           'app'     : '{',
+    \           'sk'      : ['const']
     \           },
     \}
 
@@ -317,11 +384,11 @@ endfunction
 "         filetype.
 "
 function! s:NAPaLMGetSingleFormatter()
-    let currLangDef = s:NAPaLMGetLangDef()
-    if currLangDef == {} 
+    let l:currLangDef = s:NAPaLMGetLangDef()
+    if l:currLangDef == {} 
         return g:NAPaLMNullFormatter
     endif
-    return currLangDef['sps'] 
+    return l:currLangDef['sps'] 
 endfunction
 
 " ============================================================================
@@ -331,11 +398,11 @@ endfunction
 "         filetype.
 "
 function! s:NAPaLMGetVarFormatter()
-    let currLangDef = s:NAPaLMGetLangDef()
-    if currLangDef == {} 
+    let l:currLangDef = s:NAPaLMGetLangDef()
+    if l:currLangDef == {} 
         return g:NAPaLMNullFormatter
     endif
-    return currLangDef['vps'] 
+    return l:currLangDef['vps'] 
 endfunction
 
 " ============================================================================
@@ -364,11 +431,11 @@ endfunction
 "Returns: The comment string for the current filetype.
 "
 function! s:NAPaLMGetCommentString() 
-    let currLangDef = s:NAPaLMGetLangDef()
-    if currLangDef == {} 
+    let l:currLangDef = s:NAPaLMGetLangDef()
+    if l:currLangDef == {} 
         return g:NAPaLMNullFormatter
     endif
-    return currLangDef['comment'] 
+    return l:currLangDef['comment'] 
 endfunction
 
 " ============================================================================
@@ -385,6 +452,64 @@ function! s:NAPaLMGetArgsPlacementPattern()
     return l:argsPlacementPattern 
 endfunction
 
+" ============================================================================
+"Function: s:NAPaLMGetArgsPlacementLine()  
+"Args: startLine - the line to start searching from
+"Returns: The line to start placing argument print statements after.
+"
+function! s:NAPaLMGetArgsPlacementLine(startLineNumber) 
+    let l:argsPlacementPattern = s:NAPaLMGetArgsPlacementPattern()
+    if l:argsPlacementPattern == ''
+        return a:startLineNumber
+    end
+    let l:currentLineNumber = a:startLineNumber
+    let l:maxLineNumber = a:startLineNumber + 10
+    while l:currentLineNumber < l:maxLineNumber 
+        let l:currentLine = getline(l:currentLineNumber)
+        if l:currentLine =~ l:argsPlacementPattern
+           return l:currentLineNumber 
+        end
+        let l:currentLineNumber += 1
+    endwhile
+    return a:startLineNumber
+endfunction
+
+" ============================================================================
+"Function: s:NAPaLMGetStrippedKeywords()  
+"Args: 
+"Returns: The list of keywords to strip from an arguments definition.
+"
+function! s:NAPaLMGetStrippedKeywords() 
+    let l:currLangDef = s:NAPaLMGetLangDef()
+    if l:currLangDef == {} 
+        return '' 
+    endif
+    let l:strippedKeywords = get(l:currLangDef, 'sk', [])
+    return l:strippedKeywords 
+endfunction
+
+" ============================================================================
+"Function: s:NAPaLMProcessVarType() 
+" Process a given var type string to get the true var type (i.e removes
+" const,final) 
+"Args: varType - the var type string to process
+"Returns: The true vartype string
+"
+function! s:NAPaLMProcessVarType(varType)
+    let l:varType = a:varType
+    let l:strippedKeywords = s:NAPaLMGetStrippedKeywords()
+    let l:skIndex = 0
+    let l:slLength = len(l:strippedKeywords)
+    while l:skIndex < l:slLength
+        let l:varType = substitute(l:varType, l:strippedKeywords[l:skIndex], '', '')
+        let l:skIndex = l:skIndex + 1
+    endwhile
+    return s:NAPaLMStrip(l:varType)
+endfunction
+
+function! s:NAPaLMStrip(input_string)
+    return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
+endfunction
 " ============================================================================
 " SECTION: Default key mappings
 " ============================================================================
