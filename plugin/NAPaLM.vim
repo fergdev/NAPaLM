@@ -48,12 +48,25 @@ function! g:NAPaLMPrintArgs()
     if l:currLine == ''
         return
     end
+    " Find line after the line that matches the argument placement pattern
+    let l:currLineNumber = s:NAPaLMGetArgsPlacementLine(currLineNumber)  
 
     " Extract method name
     let l:methodName = matchstr(currLine, '\v\s+\zs\S+\ze\(') 
     if l:methodName == ''
         return
     end
+
+    " Check for Argument print statement ... shell only :P
+    let l:argumentPrintStatement = s:NAPaLMGetArgumentPrintStatement() 
+    if l:argumentPrintStatement != ''
+        echom "we got argumentPrintStatement"
+        let l:printStatement = substitute(l:formatter, "${name}", l:methodName, "")
+        call s:NAPaLMAppend(l:currLineNumber, l:printStatement)
+        exec 'normal! '.l:initialLineNumber.'G='.l:currLineNumber.'G'
+        return
+    end
+
     " Get file type formater 
     let l:formatter = s:NAPaLMGetSingleFormatter()
     if l:formatter == g:NAPaLMNullFormatter 
@@ -61,9 +74,6 @@ function! g:NAPaLMPrintArgs()
         return
     end
 
-    " Find line after the line that matches the argument placement pattern
-    let l:currLineNumber = s:NAPaLMGetArgsPlacementLine(currLineNumber)  
-    
     " Replace name and var
     let l:printStatement = substitute(l:formatter, "${name}", l:methodName, "")
     call s:NAPaLMAppend(l:currLineNumber, l:printStatement)
@@ -238,6 +248,11 @@ endfunction
 " Stripped keywords - 'sk'
 "  A list of keywords to strip from variable types i.e (const,cpp) (final,java)
 "
+" Argument print statement 'aps'
+"  Used to override the standard way of printing arguments ... main used is
+"  shell script where arguments are accessed through the $1 $2 variables and 
+"  all variables can be accessed through the $@ variable.
+"
 let s:NAPaLMLanguageDefs = {
     \  'java' : { 
     \             'sps'     : 'System.out.println("${name}");',
@@ -348,6 +363,12 @@ let s:NAPaLMLanguageDefs = {
     \           'app'     : '{',
     \           'sk'      : ['const']
     \           },
+    \   'sh' : {
+    \          'sps' : 'echo ${name}',
+    \          'vps' : 'echo ${name} = $${var}',
+    \          'aps' : 'echo ${name} - "$@"',
+    \          'comment' : '#'
+    \          }
     \}
 
 if exists("g:NAPaLMCustomLanguageDefs") == 0
@@ -416,7 +437,10 @@ function! s:NAPaLMGetVarTypeFormatter(varType)
     if l:currLangDef == {} 
         return g:NAPaLMNullFormatter
     endif
-    let l:formatterMap = l:currLangDef['ops']
+    let l:formatterMap = get(l:currLangDef, 'ops' , {})
+    if l:formatterMap == {} 
+        return l:currLangDef['vps'] 
+    endif
     let l:varFormatter = get(l:formatterMap, a:varType, "" )
     if l:varFormatter == "" 
         return l:currLangDef['vps'] 
@@ -507,8 +531,32 @@ function! s:NAPaLMProcessVarType(varType)
     return s:NAPaLMStrip(l:varType)
 endfunction
 
+" ============================================================================
+"Function: s:NAPaLMStrip() 
+" Standard function to strip leading and trailing whitespace 
+" 
+"Args: input_string - the string to strip 
+"Returns: The input_string minus any trailing and leading white space. 
+"
 function! s:NAPaLMStrip(input_string)
     return substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
+endfunction
+
+" ============================================================================
+"Function: s:NAPaLMGetArgumentPrintStatement() 
+" Gets the argument print statement if available for the current filetype. 
+" 
+"Args: 
+"Returns: The argument print statement for the current lang type.
+"
+function! s:NAPaLMGetArgumentPrintStatement()
+    echom "NAPaLMGetArgumentPrintStatement" 
+    let l:currLangDef = s:NAPaLMGetLangDef()
+    if l:currLangDef == {} 
+        return '' 
+    endif
+    let l:argumentPrintStatement = get(l:currLangDef, 'aps', '')
+    return l:argumentPrintStatement 
 endfunction
 " ============================================================================
 " SECTION: Default key mappings

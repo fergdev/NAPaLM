@@ -5,6 +5,7 @@
  */
 public class VarTest {
 	public static void main(String[] args){
+		System.out.println("main"); // NNNNAPaLMMMM
 		boolean aBoolean            = false;
 		final boolean aFinalBoolean = false;
 
