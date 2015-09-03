@@ -52,16 +52,17 @@ function! g:NAPaLMPrintArgs()
     let l:currLineNumber = s:NAPaLMGetArgsPlacementLine(currLineNumber)  
 
     " Extract method name
-    let l:methodName = matchstr(currLine, '\v\s+\zs\S+\ze\(') 
+    let l:methodName = matchstr(l:currLine, '\v\s+\zs\S+\ze[\(|\{]') 
     if l:methodName == ''
         return
     end
 
     " Check for Argument print statement ... shell only :P
     let l:argumentPrintStatement = s:NAPaLMGetArgumentPrintStatement() 
+    echom "argumentPrintStatement = " . argumentPrintStatement 
     if l:argumentPrintStatement != ''
         echom "we got argumentPrintStatement"
-        let l:printStatement = substitute(l:formatter, "${name}", l:methodName, "")
+        let l:printStatement = substitute(l:argumentPrintStatement, "${name}", l:methodName, "")
         call s:NAPaLMAppend(l:currLineNumber, l:printStatement)
         exec 'normal! '.l:initialLineNumber.'G='.l:currLineNumber.'G'
         return
@@ -380,6 +381,12 @@ let s:NAPaLMLanguageDefs = {
     \               'vps'     : 'puts("${name} = " + ${var})',
     \               'comment' : '#',
     \               'sk'      : ['local']
+    \            },
+    \   'perl' : {
+    \               'sps'     : 'print "${name}\n";',
+    \               'vps'     : 'print "${name} =  $${var} \n";',
+    \               'comment' : '#',
+    \               'aps'     : 'print "${name} @_\n"'
     \            }
     \}
 
