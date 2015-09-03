@@ -364,11 +364,23 @@ let s:NAPaLMLanguageDefs = {
     \           'sk'      : ['const']
     \           },
     \   'sh' : {
-    \          'sps' : 'echo ${name}',
-    \          'vps' : 'echo ${name} = $${var}',
-    \          'aps' : 'echo ${name} - "$@"',
-    \          'comment' : '#'
-    \          }
+    \              'sps' : 'echo ${name}',
+    \              'vps' : 'echo ${name} = $${var}',
+    \              'aps' : 'echo ${name} - "$@"',
+    \              'comment' : '#'
+    \          },
+    \   'lua': {
+    \               'sps'     : 'io.write("${name}\n")',
+    \               'vps'     : 'io.write("${name} = " .. ${var} .. "\n")',
+    \               'comment' : '--',
+    \               'sk'      : ['local']
+    \          },
+    \   'ruby' : {
+    \               'sps'     : 'puts("${name}")',
+    \               'vps'     : 'puts("${name} = " + ${var})',
+    \               'comment' : '#',
+    \               'sk'      : ['local']
+    \            }
     \}
 
 if exists("g:NAPaLMCustomLanguageDefs") == 0
