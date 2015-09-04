@@ -12,11 +12,17 @@ int main()
     const char* aConstString = "Hello, World!";
 
     char aChar                             = 'a';
+    printf("aChar = %c\n", aChar); // NNNNAPaLMMMM
     const char aConstChar                  = 'b';
+    printf("aConstChar = %c\n", aConstChar); // NNNNAPaLMMMM
     signed char aSignedChar                = 'c';
+    printf("aSignedChar = %s\n", aSignedChar); // NNNNAPaLMMMM
     const signed char aConstSignedChar     = 'd';
+    printf("aConstSignedChar = %s\n", aConstSignedChar); // NNNNAPaLMMMM
     unsigned char aUnsignedChar            = 'e';
+    printf("aUnsignedChar = %c\n", aUnsignedChar); // NNNNAPaLMMMM
     const unsigned char aConstUnsignedChar = 'f';
+    printf("aConstUnsignedChar = %c\n", aConstUnsignedChar); // NNNNAPaLMMMM
 
     short aShort                                = -32767;
     const short aConstShort                     = -32767;
