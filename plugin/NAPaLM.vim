@@ -114,15 +114,11 @@ endfunction
 "
 function! g:NAPaLMPrintVarVisual() range
     echom "g:NAPaLMPrintVarVisual" 
-    let l:firstLine = line("'<")
-    echom "firstLine = " . firstLine 
-    let l:lastLine  = line("'>")
-    echom "lastLine = " . lastLine 
-    let l:firstCol  = col("'<")
-    let l:lastCol   = col("'>")
+    echom "firstLine = " . a:firstline 
+    echom "lastLine = " . a:lastline 
 
-    let l:index = l:firstLine
-    let l:lastIndex = l:lastLine
+    let l:index = a:firstline
+    let l:lastIndex = a:lastline
     while l:index <= l:lastIndex
         call s:NAPaLMPrintVarAt(l:index) 
         let l:lastIndex = l:lastIndex + 1
