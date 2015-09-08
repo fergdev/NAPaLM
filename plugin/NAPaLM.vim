@@ -108,6 +108,25 @@ function! g:NAPaLMPrintArgs()
 endfunction
 
 " ============================================================================
+"Function: 
+"Args:
+"Returns:
+"
+function! g:NAPaLMPrintVarVisual() range
+    echom "g:NAPaLMPrintVarVisual" 
+    echom "firstLine = " . a:firstline 
+    echom "lastLine = " . a:lastline 
+
+    let l:index = a:firstline
+    let l:lastIndex = a:lastline
+    while l:index <= l:lastIndex
+        call s:NAPaLMPrintVarAt(l:index) 
+        let l:lastIndex = l:lastIndex + 1
+        let l:index = l:index + 2 
+    endwhile
+endfunction
+
+" ============================================================================
 "Function: g:NAPaLMPrintVar() 
 " Assumes the line the cursor is on a variable assignment, then parses the line
 " to extract the variable name. A print statement is then inserted for
@@ -116,10 +135,22 @@ endfunction
 "Returns:
 "
 function! g:NAPaLMPrintVar()
+    let l:currLineNumber = line('.')
+    s:NAPaLMPrintVarAt(l:currLineNumber)
+endfunction
+
+" ============================================================================
+"Function: 
+"Args:
+"Returns:
+"
+function! s:NAPaLMPrintVarAt(lineNumber)
+    echom "s:NAPaLMPrintVarAt" 
+    echom "lineNumber = " . a:lineNumber 
 
     " Get the current line and the line number
-    let l:currLineNumber = line('.')
-    let l:currLine       = getline('.')
+    let l:currLineNumber = a:lineNumber
+    let l:currLine       = getline(l:currLineNumber)
     if l:currLine == ''
         return
     end
@@ -589,6 +620,8 @@ if g:NAPaLMDebug == 1
     nnoremap <Leader>pC :call g:NAPaLMUnComment()<CR> " UnComment out print statements
     nnoremap <Leader>pd :call g:NAPaLMDelete()<CR>    " Delete all print statements
     nnoremap <Leader>pl :call g:NAPaLMPrintLine()<CR> " Print current line
+
+    vnoremap <Leader>pv :call g:NAPaLMPrintVarVisual()<CR>  " Print vars in visual mode
 else
     nnoremap <silent> <Leader>pa :call g:NAPaLMPrintArgs()<CR> " Print args
     nnoremap <silent> <Leader>pv :call g:NAPaLMPrintVar()<CR>  " Print var
